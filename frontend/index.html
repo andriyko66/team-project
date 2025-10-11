@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Каталог товарів</title>
+</head>
+<body>
+  <h1>Каталог товарів</h1>
+  <button id="loadBtn">Load items</button>
+  <ul id="list"></ul>
+
+  <script>
+    document.getElementById("loadBtn").addEventListener("click", async () => {
+      const response = await fetch("/items");
+      const items = await response.json();
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+      items.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.id}: ${item.name}`;
+        list.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
