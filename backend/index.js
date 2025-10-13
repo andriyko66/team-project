@@ -5,7 +5,10 @@ const path = require("path");
 const app = express();
 const db = new sqlite3.Database("items.db");
 
-// створюємо таблицю та додаємо кілька товарів
+
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+
 db.serialize(() => {
   db.run("CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, name TEXT)");
   db.run("DELETE FROM items");
@@ -14,12 +17,13 @@ db.serialize(() => {
   db.run("INSERT INTO items (name) VALUES ('Orange')");
 });
 
-// коли користувач заходить на /items — віддаємо список товарів
+
 app.get("/items", (req, res) => {
   db.all("SELECT * FROM items", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
+
 
 app.listen(3000, () => console.log("✅ Сервер запущено на http://localhost:3000"));
