@@ -27,4 +27,4 @@
 ## Обмеження
 - Не редагуємо та не видаляємо товари.
 - Не робимо оплату або чат.
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/b92c8d5e-1b15-4be8-9fc4-8e2646f6da00" />
+
