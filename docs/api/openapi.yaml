@@ -1,0 +1,40 @@
+openapi: 3.0.0
+info:
+  title: Items API
+  version: 1.0.0
+
+paths:
+  /items:
+    get:
+      summary: Отримати список товарів
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Створити товар
+      responses:
+        '201':
+          description: Created
+
+  /items/{id}:
+    get:
+      summary: Отримати товар
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+    put:
+      summary: Оновити товар
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+    delete:
+      summary: Видалити товар
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not Found
