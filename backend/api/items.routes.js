@@ -1,34 +1,47 @@
 const express = require("express");
-const service = require("../service/items.service");
-
 const router = express.Router();
+const itemsService = require("../service/items.service");
 
+// GET /items
 router.get("/", (req, res) => {
-  res.json(service.getAll());
+  res.json(itemsService.getAll());
 });
 
-router.get("/:id", (req, res) => {
-  const item = service.getById(Number(req.params.id));
-  if (!item) return res.status(404).end();
-  res.json(item);
-});
-
+// POST /items
 router.post("/", (req, res) => {
   try {
-    const item = service.create(req.body);
+    const item = itemsService.create(req.body);
     res.status(201).json(item);
-  } catch {
+  } catch (err) {
     res.status(400).json({
       error: "ValidationError",
-      code: "NAME_REQUIRED"
+      code: err.message
     });
   }
 });
 
+// PUT /items/:id
+router.put("/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const updated = itemsService.update(id, req.body);
+
+  if (!updated) {
+    return res.status(404).json({ error: "NotFound" });
+  }
+
+  res.json(updated);
+});
+
+// DELETE /items/:id
 router.delete("/:id", (req, res) => {
-  const ok = service.remove(Number(req.params.id));
-  if (!ok) return res.status(404).end();
-  res.status(204).end();
+  const id = Number(req.params.id);
+  const removed = itemsService.remove(id);
+
+  if (!removed) {
+    return res.status(404).json({ error: "NotFound" });
+  }
+
+  res.status(204).send();
 });
 
 module.exports = router;
