@@ -27,6 +27,6 @@ docker run --name myapp --rm -d -p 3000:3000 myapp-node:1.0.0
 docker logs -f myapp
 
 # Перевірка роботи API
-curl http://localhost:3000/health
+http://localhost:3000/health
 
 
