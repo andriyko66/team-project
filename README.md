@@ -5,6 +5,9 @@
 
 ![Swagger](docs/api/swagger_screenshot.png)
 
+
+cd C:\Users\andri\OneDrive\Documents\project\team-project-main\backend
+
 ## Перевірка Docker
 docker version
 
