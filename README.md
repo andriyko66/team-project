@@ -18,3 +18,19 @@ docker run --name myapp --rm -d -p 3000:3000 myapp-node:1.0.0
 
 # 3) Перевіряємо логи, щоб побачити чи сервер запустився
 docker logs -f myapp
+
+# Піднімаємо все
+docker compose up -d
+
+# Перевіряємо контейнери
+docker ps
+
+# Перевіряємо логи API
+docker logs -f api
+
+# Перевірка API у браузері або curl
+curl http://localhost:3000/health
+
+# Зупинка та видалення контейнерів
+docker compose down
+
