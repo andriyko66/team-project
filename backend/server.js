@@ -113,6 +113,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.listen(8081, () =>
-  console.log("✅ Server running http://localhost:8081")
+app.listen(3000, () =>
+  console.log("✅ Server running http://localhost:3000")
 );
