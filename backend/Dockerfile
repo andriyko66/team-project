@@ -1,20 +1,18 @@
-# Базовий образ Node
 FROM node:20-alpine
 
-# Робоча папка в контейнері
 WORKDIR /app
 
 # Копіюємо package.json та package-lock.json для кешування залежностей
 COPY package*.json ./
 
-# Встановлюємо залежності
+# Встановлюємо лише production-залежності
 RUN npm ci --omit=dev
 
-# Копіюємо весь код у контейнер
+# Копіюємо весь код
 COPY . .
 
-# Відкриваємо порт
+# Відкриваємо порт API
 EXPOSE 3000
 
-# Команда для запуску
-CMD ["node", "index.js"]
+# Запуск сервера
+CMD ["node", "server.js"]
