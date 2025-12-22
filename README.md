@@ -29,4 +29,11 @@ docker logs -f myapp
 # Перевірка роботи API
 http://localhost:3000/health
 
+git status
+git add .
+git commit -m "message"
+git pull origin main
+git push origin main
+
+
 
