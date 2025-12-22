@@ -7,31 +7,35 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-
     steps:
+      # Крок 1: Checkout коду
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      # Крок 2: Встановлення Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: 20
           cache: 'npm'
 
+      # Крок 3: Встановлення залежностей (у папці backend)
       - name: Install dependencies
-        run: npm install
+        run: cd backend && npm install
 
+      # Крок 4: Запуск тестів
       - name: Run tests
-        run: npm test
+        run: cd backend && npm test
 
-      - name: Upload test results
+      # Крок 5: Завантаження артефактів (coverage, якщо є)
+      - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: |
-            test-results/
+          name: backend-artifacts
+          path: backend/coverage || backend/test-results
