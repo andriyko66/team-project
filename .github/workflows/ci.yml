@@ -13,7 +13,7 @@ jobs:
     steps:
       # 1. Завантажуємо код
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 2. Встановлюємо Node.js та кешуємо залежності
       - name: Setup Node.js
