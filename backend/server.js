@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { randomUUID } from "crypto";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 app.use(cors());
@@ -56,9 +58,7 @@ app.use(async (req, res, next) => {
   const r = Math.random();
 
   if (r < 0.15) {
-    await new Promise(r =>
-      setTimeout(r, 1200 + Math.random() * 800)
-    );
+    await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
   }
 
   if (r > 0.8) {
@@ -113,6 +113,15 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.listen(3000, () =>
-  console.log("✅ Server running http://localhost:3000")
-);
+/* ===== Static frontend ===== */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, "../frontend")));
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+});
+
+/* ===== Start server ===== */
+app.listen(3000, () => {
+  console.log("✅ Server running on http://localhost:3000");
+});
