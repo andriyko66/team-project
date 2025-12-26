@@ -1,16 +1,19 @@
 import express from "express";
 import cors from "cors";
-import { randomUUID } from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
+import { randomUUID } from "crypto";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 /* ===== In-memory stores ===== */
-const idemStore = new Map();     // Idempotency-Key -> response
-const rate = new Map();          // ip -> { count, ts }
+const idemStore = new Map(); // Idempotency-Key -> response
+const rate = new Map(); // ip -> { count, ts }
 
 /* ===== Rate limit config ===== */
 const WINDOW_MS = 10_000;
@@ -27,17 +30,12 @@ app.use((req, res, next) => {
 
 /* ===== Rate-limit + Retry-After ===== */
 app.use((req, res, next) => {
-  const ip =
-    req.headers["x-forwarded-for"] ||
-    req.socket.remoteAddress ||
-    "local";
+  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "local";
 
   const prev = rate.get(ip) ?? { count: 0, ts: now() };
   const within = now() - prev.ts < WINDOW_MS;
 
-  const state = within
-    ? { count: prev.count + 1, ts: prev.ts }
-    : { count: 1, ts: now() };
+  const state = within ? { count: prev.count + 1, ts: prev.ts } : { count: 1, ts: now() };
 
   rate.set(ip, state);
 
@@ -47,7 +45,7 @@ app.use((req, res, next) => {
       error: "too_many_requests",
       code: null,
       details: null,
-      requestId: req.requestId
+      requestId: req.requestId,
     });
   }
   next();
@@ -69,13 +67,13 @@ app.use(async (req, res, next) => {
       error: err,
       code,
       details: null,
-      requestId: req.requestId
+      requestId: req.requestId,
     });
   }
   next();
 });
 
-/* ===== Idempotent POST ===== */
+/* ===== Idempotent POST /orders ===== */
 app.post("/orders", (req, res) => {
   const key = req.get("Idempotency-Key");
 
@@ -84,44 +82,50 @@ app.post("/orders", (req, res) => {
       error: "idempotency_key_required",
       code: null,
       details: null,
-      requestId: req.requestId
+      requestId: req.requestId,
     });
   }
 
   if (idemStore.has(key)) {
     return res.status(201).json({
       ...idemStore.get(key),
-      requestId: req.requestId
+      requestId: req.requestId,
     });
   }
 
   const order = {
     id: "ord_" + randomUUID().slice(0, 8),
-    title: req.body?.title ?? "Untitled"
+    title: req.body?.title ?? "Untitled",
   };
 
   idemStore.set(key, order);
 
   res.status(201).json({
     ...order,
-    requestId: req.requestId
+    requestId: req.requestId,
   });
 });
 
-/* ===== Health ===== */
+/* ===== Health endpoint ===== */
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-/* ===== Static frontend ===== */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/* ===== Example /items endpoint for frontend ===== */
+app.get("/items", (_req, res) => {
+  res.json([
+    { id: 1, name: "Товар 1" },
+    { id: 2, name: "Товар 2" },
+    { id: 3, name: "Товар 3" },
+  ]);
+});
+
+/* ===== Serve frontend static files ===== */
 app.use(express.static(path.join(__dirname, "../frontend")));
-app.get("*", (_req, res) => {
+
+/* ===== Catch-all for frontend routes ===== */
+app.get("/*", (_req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
-/* ===== Start server ===== */
-app.listen(3000, () => {
-  console.log("✅ Server running on http://localhost:3000");
-});
+app.listen(3000, () => console.log("✅ Server running http://localhost:3000"));
