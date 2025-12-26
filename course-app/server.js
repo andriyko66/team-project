@@ -1,28 +1,27 @@
 import express from "express";
 import cors from "cors";
+import { randomUUID } from "crypto";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-let products = [
-  { id: 1, name: "Product A", price: 100 },
-  { id: 2, name: "Product B", price: 150 }
+const products = [
+  { id: 1, title: "Ноутбук", price: 1200, img: "https://via.placeholder.com/150" },
+  { id: 2, title: "Смартфон", price: 800, img: "https://via.placeholder.com/150" },
+  { id: 3, title: "Навушники", price: 150, img: "https://via.placeholder.com/150" },
+  { id: 4, title: "Миша", price: 50, img: "https://via.placeholder.com/150" },
+  { id: 5, title: "Клавіатура", price: 100, img: "https://via.placeholder.com/150" }
 ];
 
-app.get("/products", (req, res) => {
+// endpoint для отримання товарів
+app.get("/products", (_req, res) => {
   res.json(products);
 });
 
-app.post("/products", (req, res) => {
-  const { name, price } = req.body;
-  const newProduct = { id: products.length + 1, name, price };
-  products.push(newProduct);
-  res.status(201).json(newProduct);
+// health check
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
 });
 
-app.get("/health", (req, res) => res.json({ status: "ok" }));
-
-app.use(express.static("frontend"));
-
-app.listen(3000, () => console.log("✅ Course app running on http://localhost:3000"));
+app.listen(3000, () => console.log("✅ Server running at http://localhost:3000"));
