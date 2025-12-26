@@ -3,86 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <title>Каталог товарів</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f0f4f8; padding: 20px; }
-    h1 { color: #333; text-align: center; }
-    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
-    ul { list-style: none; padding: 0; max-width: 500px; margin: auto; }
-    li { background: #fff; margin: 10px 0; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-    input { padding: 5px; margin-right: 5px; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Каталог товарів</h1>
-
-  <div style="text-align:center; margin-bottom:20px;">
-    <input type="text" id="nameInput" placeholder="Назва товару">
-    <input type="number" id="priceInput" placeholder="Ціна">
-    <button id="addBtn">Додати товар</button>
+  <div class="container">
+    <h1>Мій Каталог Товарів</h1>
+    <button id="loadBtn">Завантажити товари</button>
+    <ul id="itemsList"></ul>
+    <h2>Замовлення</h2>
+    <input type="text" id="orderInput" placeholder="Назва товару">
+    <button id="orderBtn">Створити замовлення</button>
+    <ul id="ordersList"></ul>
   </div>
-
-  <button id="loadBtn">Завантажити товари</button>
-  <ul id="itemsList"></ul>
 
   <script>
     const loadBtn = document.getElementById('loadBtn');
-    const addBtn = document.getElementById('addBtn');
-    const list = document.getElementById('itemsList');
-    const nameInput = document.getElementById('nameInput');
-    const priceInput = document.getElementById('priceInput');
+    const itemsList = document.getElementById('itemsList');
 
-    function renderItems(items) {
-      list.innerHTML = '';
-      items.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = `${item.id}: ${item.name} - ${item.price} грн`;
+    const orderBtn = document.getElementById('orderBtn');
+    const orderInput = document.getElementById('orderInput');
+    const ordersList = document.getElementById('ordersList');
 
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Видалити';
-        delBtn.onclick = () => {
-          fetch(`/items/${item.id}`, { method: 'DELETE' })
-            .then(() => loadItems())
-            .catch(err => alert('Помилка: ' + err));
-        };
-
-        li.appendChild(delBtn);
-        list.appendChild(li);
-      });
-    }
-
-    function loadItems() {
-      fetch('/items')
+    // ===== Load items (mock API) =====
+    loadBtn.addEventListener('click', () => {
+      fetch('/health') // просто приклад, заміни на API /items якщо є
         .then(res => res.json())
-        .then(data => renderItems(data))
-        .catch(err => alert('Помилка: ' + err));
-    }
+        .then(data => {
+          itemsList.innerHTML = '';
+          for (let i = 1; i <= 5; i++) {
+            const li = document.createElement('li');
+            li.textContent = `Товар ${i}`;
+            itemsList.appendChild(li);
+          }
+        });
+    });
 
-    loadBtn.addEventListener('click', loadItems);
-
-    addBtn.addEventListener('click', () => {
-      const name = nameInput.value.trim();
-      const price = parseFloat(priceInput.value);
-
-      if (!name || isNaN(price)) {
-        alert('Введіть назву та ціну товару');
-        return;
-      }
-
-      fetch('/items', {
+    // ===== Create order =====
+    orderBtn.addEventListener('click', () => {
+      const title = orderInput.value || "Товар без назви";
+      fetch('/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, price })
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': crypto.randomUUID()
+        },
+        body: JSON.stringify({ title })
       })
-      .then(() => {
-        nameInput.value = '';
-        priceInput.value = '';
-        loadItems();
+      .then(res => res.json())
+      .then(data => {
+        const li = document.createElement('li');
+        li.textContent = `${data.id}: ${data.title}`;
+        ordersList.appendChild(li);
+        orderInput.value = '';
       })
       .catch(err => alert('Помилка: ' + err));
     });
-
-    // Автоматичне завантаження при відкритті
-    loadItems();
   </script>
 </body>
 </html>
