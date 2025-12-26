@@ -1,18 +1,41 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Мій Каталог Товарів</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <h1>Мій Каталог Товарів</h1>
+    <div id="cart-counter">Кошик: <span id="cart-count">0</span> товарів</div>
   </header>
-
-  <main id="product-list"></main>
-
+  <main>
+    <section id="filters">
+      <label>Категорія:
+        <select id="category-filter">
+          <option value="all">Всі</option>
+          <option value="Електроніка">Електроніка</option>
+          <option value="Книги">Книги</option>
+          <option value="Іграшки">Іграшки</option>
+          <option value="Одяг">Одяг</option>
+          <option value="Продукти">Продукти</option>
+        </select>
+      </label>
+      <label>Сортувати за ціною:
+        <select id="sort-price">
+          <option value="none">Без сортування</option>
+          <option value="asc">По зростанню</option>
+          <option value="desc">По спаданню</option>
+        </select>
+      </label>
+    </section>
+    <section id="products-container"></section>
+  </main>
+  <footer>
+    <p>© 2025 Мій Каталог Товарів. Всі права захищені.</p>
+  </footer>
   <script src="app.js"></script>
 </body>
 </html>
