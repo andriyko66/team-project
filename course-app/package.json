@@ -1,0 +1,14 @@
+{
+  "name": "course-app",
+  "version": "1.0.0",
+  "description": "Catalog web app for course project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
