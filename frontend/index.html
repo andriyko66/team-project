@@ -1,63 +1,278 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <title>Каталог товарів</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Лабораторна робота — Web App</title>
+
+  <!-- ===============================
+       СТИЛІ
+  =============================== -->
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #222;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #333;
+    }
+
+    nav button {
+      background: none;
+      border: none;
+      color: white;
+      padding: 15px 20px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    nav button:hover {
+      background-color: #555;
+    }
+
+    main {
+      padding: 20px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    input {
+      padding: 6px;
+      margin-right: 5px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      background-color: #222;
+      color: white;
+      margin-top: 30px;
+    }
+  </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Мій Каталог Товарів</h1>
-    <button id="loadBtn">Завантажити товари</button>
-    <ul id="itemsList"></ul>
-    <h2>Замовлення</h2>
-    <input type="text" id="orderInput" placeholder="Назва товару">
-    <button id="orderBtn">Створити замовлення</button>
-    <ul id="ordersList"></ul>
+
+<!-- ===============================
+     HEADER
+=============================== -->
+<header>
+  <h1>Навчальний Web-проєкт</h1>
+  <p>Frontend + Backend (Express)</p>
+</header>
+
+<!-- ===============================
+     NAVIGATION
+=============================== -->
+<nav>
+  <button onclick="showPage('home')">Головна</button>
+  <button onclick="showPage('items')">Товари</button>
+  <button onclick="showPage('orders')">Замовлення</button>
+  <button onclick="showPage('health')">Статус сервера</button>
+</nav>
+
+<!-- ===============================
+     MAIN CONTENT
+=============================== -->
+<main>
+
+  <!-- ===== HOME ===== -->
+  <div id="home" class="page active">
+    <div class="card">
+      <h2>Вітаю 👋</h2>
+      <p>
+        Це демонстраційний веб-додаток для лабораторної роботи.
+        Тут реалізовано:
+      </p>
+      <ul>
+        <li>Кілька сторінок</li>
+        <li>Робота з API</li>
+        <li>Замовлення товарів</li>
+        <li>Логіка на JavaScript</li>
+      </ul>
+    </div>
   </div>
 
-  <script>
-    const loadBtn = document.getElementById('loadBtn');
-    const itemsList = document.getElementById('itemsList');
+  <!-- ===== ITEMS ===== -->
+  <div id="items" class="page">
+    <h2>Список товарів</h2>
+    <div id="itemsList"></div>
+  </div>
 
-    const orderBtn = document.getElementById('orderBtn');
-    const orderInput = document.getElementById('orderInput');
-    const ordersList = document.getElementById('ordersList');
+  <!-- ===== ORDERS ===== -->
+  <div id="orders" class="page">
+    <h2>Замовлення</h2>
+    <button class="btn" onclick="loadOrders()">Оновити список</button>
+    <div id="ordersList"></div>
+  </div>
 
-    // ===== Load items (mock API) =====
-    loadBtn.addEventListener('click', () => {
-      fetch('/health') // просто приклад, заміни на API /items якщо є
-        .then(res => res.json())
-        .then(data => {
-          itemsList.innerHTML = '';
-          for (let i = 1; i <= 5; i++) {
-            const li = document.createElement('li');
-            li.textContent = `Товар ${i}`;
-            itemsList.appendChild(li);
-          }
-        });
-    });
+  <!-- ===== HEALTH ===== -->
+  <div id="health" class="page">
+    <h2>Статус сервера</h2>
+    <button class="btn" onclick="checkHealth()">Перевірити</button>
+    <pre id="healthResult"></pre>
+  </div>
 
-    // ===== Create order =====
-    orderBtn.addEventListener('click', () => {
-      const title = orderInput.value || "Товар без назви";
-      fetch('/orders', {
-        method: 'POST',
+</main>
+
+<!-- ===============================
+     FOOTER
+=============================== -->
+<footer>
+  <p>Лабораторна робота • 2025</p>
+</footer>
+
+<!-- ===============================
+     JAVASCRIPT
+=============================== -->
+<script>
+  const API_URL = "http://localhost:3000";
+
+  // ----- Навігація
+  function showPage(pageId) {
+    const pages = document.querySelectorAll(".page");
+    pages.forEach(p => p.classList.remove("active"));
+    document.getElementById(pageId).classList.add("active");
+
+    if (pageId === "items") {
+      loadItems();
+    }
+  }
+
+  // ----- Завантаження товарів
+  async function loadItems() {
+    const container = document.getElementById("itemsList");
+    container.innerHTML = "Завантаження...";
+
+    try {
+      const response = await fetch(API_URL + "/items");
+      const items = await response.json();
+
+      container.innerHTML = "";
+
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "card";
+
+        div.innerHTML = `
+          <h3>${item.name}</h3>
+          <p>${item.description}</p>
+          <p><b>Ціна:</b> ${item.price} грн</p>
+          <input type="number" min="1" value="1" id="qty-${item.id}">
+          <button class="btn" onclick="createOrder('${item.id}')">
+            Замовити
+          </button>
+        `;
+
+        container.appendChild(div);
+      });
+
+    } catch (err) {
+      container.innerHTML = "Помилка завантаження";
+    }
+  }
+
+  // ----- Створення замовлення
+  async function createOrder(itemId) {
+    const qty = document.getElementById("qty-" + itemId).value;
+
+    try {
+      const response = await fetch(API_URL + "/orders", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': crypto.randomUUID()
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ title })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const li = document.createElement('li');
-        li.textContent = `${data.id}: ${data.title}`;
-        ordersList.appendChild(li);
-        orderInput.value = '';
-      })
-      .catch(err => alert('Помилка: ' + err));
+        body: JSON.stringify({
+          itemId: itemId,
+          quantity: Number(qty)
+        })
+      });
+
+      const data = await response.json();
+      alert("Замовлення створено. Сума: " + data.total + " грн");
+
+    } catch (err) {
+      alert("Помилка створення замовлення");
+    }
+  }
+
+  // ----- Завантаження замовлень
+  async function loadOrders() {
+    const container = document.getElementById("ordersList");
+    container.innerHTML = "Завантаження...";
+
+    const response = await fetch(API_URL + "/orders");
+    const orders = await response.json();
+
+    container.innerHTML = "";
+
+    orders.forEach(order => {
+      const div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <p><b>ID:</b> ${order.id}</p>
+        <p><b>Товар:</b> ${order.item.name}</p>
+        <p><b>Кількість:</b> ${order.quantity}</p>
+        <p><b>Сума:</b> ${order.total} грн</p>
+      `;
+
+      container.appendChild(div);
     });
-  </script>
+  }
+
+  // ----- Health check
+  async function checkHealth() {
+    const result = document.getElementById("healthResult");
+    result.textContent = "Перевірка...";
+
+    const response = await fetch(API_URL + "/health");
+    const data = await response.json();
+
+    result.textContent = JSON.stringify(data, null, 2);
+  }
+</script>
+
 </body>
 </html>
