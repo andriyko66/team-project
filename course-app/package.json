@@ -1,14 +1,18 @@
 {
   "name": "course-app",
   "version": "1.0.0",
-  "description": "Catalog web app for course project",
+  "description": "Веб-застосунок каталог товарів для курсової",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"No tests yet\""
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }
