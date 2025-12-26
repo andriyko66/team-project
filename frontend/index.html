@@ -2,30 +2,87 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>Список товарів</title>
+  <title>Каталог товарів</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f4f8; padding: 20px; }
+    h1 { color: #333; text-align: center; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    ul { list-style: none; padding: 0; max-width: 500px; margin: auto; }
+    li { background: #fff; margin: 10px 0; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+    input { padding: 5px; margin-right: 5px; }
+  </style>
 </head>
 <body>
-  <h1>Список товарів</h1>
+  <h1>Каталог товарів</h1>
+
+  <div style="text-align:center; margin-bottom:20px;">
+    <input type="text" id="nameInput" placeholder="Назва товару">
+    <input type="number" id="priceInput" placeholder="Ціна">
+    <button id="addBtn">Додати товар</button>
+  </div>
+
   <button id="loadBtn">Завантажити товари</button>
   <ul id="itemsList"></ul>
 
   <script>
-    const button = document.getElementById('loadBtn');
+    const loadBtn = document.getElementById('loadBtn');
+    const addBtn = document.getElementById('addBtn');
     const list = document.getElementById('itemsList');
+    const nameInput = document.getElementById('nameInput');
+    const priceInput = document.getElementById('priceInput');
 
-    button.addEventListener('click', () => {
+    function renderItems(items) {
+      list.innerHTML = '';
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `${item.id}: ${item.name} - ${item.price} грн`;
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Видалити';
+        delBtn.onclick = () => {
+          fetch(`/items/${item.id}`, { method: 'DELETE' })
+            .then(() => loadItems())
+            .catch(err => alert('Помилка: ' + err));
+        };
+
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    }
+
+    function loadItems() {
       fetch('/items')
         .then(res => res.json())
-        .then(data => {
-          list.innerHTML = '';
-          data.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item.id + ': ' + item.name;
-            list.appendChild(li);
-          });
-        })
+        .then(data => renderItems(data))
         .catch(err => alert('Помилка: ' + err));
+    }
+
+    loadBtn.addEventListener('click', loadItems);
+
+    addBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const price = parseFloat(priceInput.value);
+
+      if (!name || isNaN(price)) {
+        alert('Введіть назву та ціну товару');
+        return;
+      }
+
+      fetch('/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, price })
+      })
+      .then(() => {
+        nameInput.value = '';
+        priceInput.value = '';
+        loadItems();
+      })
+      .catch(err => alert('Помилка: ' + err));
     });
+
+    // Автоматичне завантаження при відкритті
+    loadItems();
   </script>
 </body>
 </html>
