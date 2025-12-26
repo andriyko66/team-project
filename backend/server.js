@@ -1,131 +1,137 @@
-import express from "express";
+vimport express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/* ================== базові налаштування ================== */
 
 const app = express();
+const PORT = 3000;
+
 app.use(cors());
 app.use(express.json());
 
-/* ===== In-memory stores ===== */
-const idemStore = new Map(); // Idempotency-Key -> response
-const rate = new Map(); // ip -> { count, ts }
+/* ================== __dirname для ES modules ================== */
 
-/* ===== Rate limit config ===== */
-const WINDOW_MS = 10_000;
-const MAX_REQ = 8;
-const now = () => Date.now();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-/* ===== X-Request-Id middleware ===== */
+/* ================== in-memory дані (лаба) ================== */
+
+// імітація БД товарів
+const items = [
+  { id: 1, name: "Хліб", price: 25 },
+  { id: 2, name: "Молоко", price: 40 },
+  { id: 3, name: "Сир", price: 120 }
+];
+
+// замовлення
+const orders = [];
+
+/* ================== middleware логування ================== */
+
 app.use((req, res, next) => {
-  const rid = req.get("X-Request-Id") || randomUUID();
-  req.requestId = rid;
-  res.setHeader("X-Request-Id", rid);
+  const id = randomUUID().slice(0, 8);
+  req.requestId = id;
+
+  console.log(
+    `[${new Date().toLocaleTimeString()}]`,
+    req.method,
+    req.url,
+    "id:",
+    id
+  );
+
   next();
 });
 
-/* ===== Rate-limit + Retry-After ===== */
-app.use((req, res, next) => {
-  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "local";
+/* ================== API: health ================== */
 
-  const prev = rate.get(ip) ?? { count: 0, ts: now() };
-  const within = now() - prev.ts < WINDOW_MS;
-
-  const state = within ? { count: prev.count + 1, ts: prev.ts } : { count: 1, ts: now() };
-
-  rate.set(ip, state);
-
-  if (state.count > MAX_REQ) {
-    res.setHeader("Retry-After", "2");
-    return res.status(429).json({
-      error: "too_many_requests",
-      code: null,
-      details: null,
-      requestId: req.requestId,
-    });
-  }
-  next();
-});
-
-/* ===== Random delays & failures (for retries demo) ===== */
-app.use(async (req, res, next) => {
-  const r = Math.random();
-
-  if (r < 0.15) {
-    await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
-  }
-
-  if (r > 0.8) {
-    const err = Math.random() < 0.5 ? "unavailable" : "unexpected";
-    const code = err === "unavailable" ? 503 : 500;
-
-    return res.status(code).json({
-      error: err,
-      code,
-      details: null,
-      requestId: req.requestId,
-    });
-  }
-  next();
-});
-
-/* ===== Idempotent POST /orders ===== */
-app.post("/orders", (req, res) => {
-  const key = req.get("Idempotency-Key");
-
-  if (!key) {
-    return res.status(400).json({
-      error: "idempotency_key_required",
-      code: null,
-      details: null,
-      requestId: req.requestId,
-    });
-  }
-
-  if (idemStore.has(key)) {
-    return res.status(201).json({
-      ...idemStore.get(key),
-      requestId: req.requestId,
-    });
-  }
-
-  const order = {
-    id: "ord_" + randomUUID().slice(0, 8),
-    title: req.body?.title ?? "Untitled",
-  };
-
-  idemStore.set(key, order);
-
-  res.status(201).json({
-    ...order,
-    requestId: req.requestId,
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    time: new Date().toISOString(),
+    requestId: req.requestId
   });
 });
 
-/* ===== Health endpoint ===== */
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+/* ================== API: items (лаба 2–3) ================== */
+
+app.get("/items", (req, res) => {
+  res.json(items);
 });
 
-/* ===== Example /items endpoint for frontend ===== */
-app.get("/items", (_req, res) => {
-  res.json([
-    { id: 1, name: "Товар 1" },
-    { id: 2, name: "Товар 2" },
-    { id: 3, name: "Товар 3" },
-  ]);
+app.post("/items", (req, res) => {
+  const { name, price } = req.body;
+
+  if (!name || !price) {
+    return res.status(400).json({
+      error: "name and price required"
+    });
+  }
+
+  const newItem = {
+    id: items.length + 1,
+    name,
+    price
+  };
+
+  items.push(newItem);
+
+  res.status(201).json(newItem);
 });
 
-/* ===== Serve frontend static files ===== */
-app.use(express.static(path.join(__dirname, "../frontend")));
+/* ================== API: orders (додаткова логіка) ================== */
 
-/* ===== Catch-all for frontend routes ===== */
-app.get("/*", (_req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+app.post("/orders", (req, res) => {
+  const { itemId, quantity } = req.body;
+
+  const item = items.find(i => i.id === itemId);
+
+  if (!item) {
+    return res.status(404).json({ error: "item not found" });
+  }
+
+  const order = {
+    id: "ord_" + randomUUID().slice(0, 6),
+    item: item.name,
+    quantity,
+    total: item.price * quantity,
+    createdAt: new Date().toISOString()
+  };
+
+  orders.push(order);
+
+  res.status(201).json(order);
 });
 
-app.listen(3000, () => console.log("✅ Server running http://localhost:3000"));
+app.get("/orders", (req, res) => {
+  res.json(orders);
+});
+
+/* ================== FRONTEND ================== */
+/* ❗ БЕЗ '*' — ТІЛЬКИ ЯВНИЙ ШЛЯХ */
+
+app.get("/", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "..", "frontend", "index.html")
+  );
+});
+
+/* ================== 404 (безпечний) ================== */
+
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    method: req.method,
+    path: req.originalUrl
+  });
+});
+
+/* ================== запуск ================== */
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
+});
+
