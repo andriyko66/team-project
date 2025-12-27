@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Лабораторна робота — Web App</title>
 
   <!-- ===============================
@@ -167,87 +167,68 @@
      JAVASCRIPT
 =============================== -->
 <script>
-  const API_URL = "http://localhost:3000";
+const API_URL = "http://localhost:3000";
 
-  // ----- Навігація
-  function showPage(pageId) {
-    const pages = document.querySelectorAll(".page");
-    pages.forEach(p => p.classList.remove("active"));
-    document.getElementById(pageId).classList.add("active");
+// ----- Навігація між сторінками -----
+function showPage(pageId) {
+  const pages = document.querySelectorAll(".page");
+  pages.forEach(p => p.classList.remove("active"));
+  document.getElementById(pageId).classList.add("active");
 
-    if (pageId === "items") {
-      loadItems();
-    }
+  if (pageId === "items") loadItems();
+  if (pageId === "orders") loadOrders();
+}
+
+// ----- Завантаження товарів -----
+async function loadItems() {
+  const container = document.getElementById("itemsList");
+  container.innerHTML = "Завантаження...";
+
+  try {
+    const response = await fetch(API_URL + "/items");
+    const items = await response.json();
+
+    container.innerHTML = "";
+
+    items.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <h3>${item.name}</h3>
+        <p>${item.description}</p>
+        <p><b>Ціна:</b> ${item.price} грн</p>
+        <input type="number" min="1" value="1" id="qty-${item.id}">
+        <button class="btn" onclick="createOrder('${item.id}')">Замовити</button>
+      `;
+
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    container.innerHTML = "<p style='color:red;'>Помилка завантаження товарів</p>";
   }
+}
 
-  // ----- Завантаження товарів
-  async function loadItems() {
-    const container = document.getElementById("itemsList");
-    container.innerHTML = "Завантаження...";
+// ----- Створення замовлення -----
+async function createOrder(itemId) {
+  const qty = document.getElementById("qty-" + itemId).value;
 
-    try {
-      const response = await fetch(API_URL + "/items");
-      const items = await response.json();
-
-      container.innerHTML = "";
-
-      items.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "card";
-
-        div.innerHTML = `
-          <h3>${item.name}</h3>
-          <p>${item.description}</p>
-          <p><b>Ціна:</b> ${item.price} грн</p>
-          <input type="number" min="1" value="1" id="qty-${item.id}">
-          <button class="btn" onclick="createOrder('${item.id}')">
-            Замовити
-          </button>
-        `;
-
-        container.appendChild(div);
-      });
-
-    } catch (err) {
-      container.innerHTML = "Помилка завантаження";
-    }
+  try {
+    const response = await fetch(API_URL + "/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId: itemId, quantity: Number(qty) })
+    });
+    const data = await response.json();
+    alert("Замовлення створено. Сума: " + data.total + " грн");
+    loadOrders(); // одразу оновлюємо список замовлень
+  } catch (err) {
+    alert("Помилка створення замовлення");
   }
+}
 
-  // ----- Створення замовлення
-  async function createOrder(itemId) {
-    const qty = document.getElementById("qty-" + itemId).value;
-
-    try {
-      const response = await fetch(API_URL + "/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          itemId: itemId,
-          quantity: Number(qty)
-        })
-      });
-
-      const data = await response.json();
-      alert("Замовлення створено. Сума: " + data.total + " грн");
-
-    } catch (err) {
-      alert("Помилка створення замовлення");
-    }
-  }
-
-<!-- ====== Завантаження замовлень ====== -->
-<div>
-  <h2>Замовлення</h2>
-  <button id="loadOrdersBtn">Завантажити замовлення</button>
-  <div id="ordersList" style="margin-top:10px;"></div>
-</div>
-
-<script>
-  const API_URL = "http://localhost:3000";
-
- // ----- Завантаження замовлень
+// ----- Завантаження замовлень -----
 async function loadOrders() {
   const container = document.getElementById("ordersList");
   container.innerHTML = "Завантаження...";
@@ -287,34 +268,37 @@ async function loadOrders() {
   }
 }
 
-// ----- Видалення замовлення
+// ----- Видалення замовлення -----
 async function deleteOrder(id) {
   if (!confirm("Видалити це замовлення?")) return;
 
   try {
     await fetch(`${API_URL}/orders/${id}`, { method: "DELETE" });
-    loadOrders(); // оновлюємо список після видалення
+    loadOrders();
   } catch (err) {
     alert("Помилка видалення замовлення");
   }
 }
 
-// Автоматичне завантаження замовлень при відкритті сторінки
-window.addEventListener("DOMContentLoaded", loadOrders);
+// ----- Перевірка статусу сервера -----
+async function checkHealth() {
+  const result = document.getElementById("healthResult");
+  result.textContent = "Перевірка...";
 
-
-
-
-  // ----- Health check
-  async function checkHealth() {
-    const result = document.getElementById("healthResult");
-    result.textContent = "Перевірка...";
-
+  try {
     const response = await fetch(API_URL + "/health");
     const data = await response.json();
-
     result.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    result.textContent = "Помилка при перевірці сервера";
   }
+}
+
+// ----- Автозавантаження -----
+window.addEventListener("DOMContentLoaded", () => {
+  loadItems();
+  loadOrders();
+});
 </script>
 
 </body>
