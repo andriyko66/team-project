@@ -2,92 +2,42 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>Лабораторна робота — Web App</title>
+  <title>Лабораторна робота</title>
 
-  <!-- ===============================
-       СТИЛІ
-  =============================== -->
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-    }
-
-    header {
-      background-color: #222;
-      color: white;
-      padding: 15px;
-      text-align: center;
-    }
-
-    nav {
-      display: flex;
-      justify-content: center;
-      background-color: #333;
-    }
-
+    body { margin: 0; font-family: Arial; background: #f4f4f4; }
+    header { background: #222; color: white; padding: 15px; text-align: center; }
+    nav { background: #333; display: flex; justify-content: center; }
     nav button {
       background: none;
       border: none;
       color: white;
       padding: 15px 20px;
       cursor: pointer;
-      font-size: 16px;
     }
-
-    nav button:hover {
-      background-color: #555;
-    }
-
-    main {
-      padding: 20px;
-    }
-
-    .page {
-      display: none;
-    }
-
-    .page.active {
-      display: block;
-    }
-
+    nav button:hover { background: #555; }
+    main { padding: 20px; }
+    .page { display: none; }
+    .page.active { display: block; }
     .card {
       background: white;
       padding: 15px;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
       border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-
-    .card h3 {
-      margin-top: 0;
-    }
-
     .btn {
-      background-color: #007bff;
+      background: #007bff;
       color: white;
       border: none;
       padding: 8px 12px;
       cursor: pointer;
-      border-radius: 4px;
     }
-
-    .btn:hover {
-      background-color: #0056b3;
-    }
-
-    input {
-      padding: 6px;
-      margin-right: 5px;
-    }
-
-    footer {
+    .danger { background: #dc3545; }
+    .banner {
+      background: orange;
+      padding: 10px;
       text-align: center;
-      padding: 15px;
-      background-color: #222;
-      color: white;
-      margin-top: 30px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -95,8 +45,7 @@
 <body>
 
 <header>
-  <h1>Навчальний Web-проєкт</h1>
-  <p>Frontend + Backend (Express)</p>
+  <h1>Навчальний Web-додаток</h1>
 </header>
 
 <nav>
@@ -106,35 +55,27 @@
   <button onclick="showPage('health')">Статус сервера</button>
 </nav>
 
+<div id="degraded"></div>
+
 <main>
-  <!-- ===== HOME ===== -->
   <div id="home" class="page active">
     <div class="card">
-      <h2>Вітаю 👋</h2>
-      <p>Це демонстраційний веб-додаток для лабораторної роботи.</p>
-      <ul>
-        <li>Кілька сторінок</li>
-        <li>Робота з API</li>
-        <li>Замовлення товарів</li>
-        <li>Логіка на JavaScript</li>
-      </ul>
+      <h2>Вітаю</h2>
+      <p>Лабораторна робота з REST, ідемпотентністю та fault tolerance.</p>
     </div>
   </div>
 
-  <!-- ===== ITEMS ===== -->
   <div id="items" class="page">
-    <h2>Список товарів</h2>
+    <h2>Товари</h2>
     <div id="itemsList"></div>
   </div>
 
-  <!-- ===== ORDERS ===== -->
   <div id="orders" class="page">
     <h2>Замовлення</h2>
-    <button class="btn" onclick="loadOrders()">Оновити список</button>
-    <div id="ordersList" style="margin-top:10px;"></div>
+    <button class="btn" onclick="loadOrders()">Оновити</button>
+    <div id="ordersList"></div>
   </div>
 
-  <!-- ===== HEALTH ===== -->
   <div id="health" class="page">
     <h2>Статус сервера</h2>
     <button class="btn" onclick="checkHealth()">Перевірити</button>
@@ -142,142 +83,116 @@
   </div>
 </main>
 
-<footer>
-  <p>Лабораторна робота • 2025</p>
-</footer>
-
-
-<!-- ===============================
-     JAVASCRIPT
-=============================== -->
 <script>
 const API_URL = "http://localhost:3000";
+let errorStreak = 0;
 
-// Навігація
-function showPage(pageId) {
+/* NAVIGATION */
+function showPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.getElementById(pageId).classList.add("active");
+  document.getElementById(id).classList.add("active");
 
-  if (pageId === "items") loadItems();
-  if (pageId === "orders") loadOrders();
+  if (id === "items") loadItems();
+  if (id === "orders") loadOrders();
 }
 
+/* DEGRADED MODE */
+function enableDegradedMode() {
+  document.getElementById("degraded").innerHTML =
+    `<div class="banner">⚠️ Degraded mode: сервер недоступний</div>`;
+  document.querySelectorAll("button").forEach(b => b.disabled = true);
+}
 
-
-// Завантаження товарів
+/* LOAD ITEMS */
 async function loadItems() {
-  const container = document.getElementById("itemsList");
-  container.innerHTML = "Завантаження...";
+  const res = await fetch(`${API_URL}/items`);
+  const items = await res.json();
+  const box = document.getElementById("itemsList");
+  box.innerHTML = "";
 
-  try {
-    const res = await fetch(`${API_URL}/items`);
-    const items = await res.json();
-    container.innerHTML = "";
-
-    items.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <h3>${item.name}</h3>
-        <p>${item.description}</p>
-        <p><b>Ціна:</b> ${item.price} грн</p>
-        <input type="number" min="1" value="1" id="qty-${item.id}">
-        <button class="btn" onclick="createOrder('${item.id}')">Замовити</button>
-      `;
-      container.appendChild(div);
-    });
-  } catch (err) {
-    container.innerHTML = `<p style="color:red;">Помилка завантаження товарів: ${err}</p>`;
-  }
+  items.forEach(i => {
+    box.innerHTML += `
+      <div class="card">
+        <b>${i.name}</b><br>
+        ${i.description}<br>
+        ${i.price} грн<br>
+        <input type="number" id="q-${i.id}" value="1" min="1">
+        <button class="btn" onclick="createOrder('${i.id}')">Замовити</button>
+      </div>`;
+  });
 }
 
-// Створення замовлення
+/* CREATE ORDER (IDEMPOTENT + RETRIES) */
 async function createOrder(itemId) {
-  const qty = document.getElementById(`qty-${itemId}`).value;
+  if (errorStreak >= 3) return;
+
+  const qty = Number(document.getElementById(`q-${itemId}`).value);
+  const key = crypto.randomUUID();
 
   try {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 3000);
+
     const res = await fetch(`${API_URL}/orders`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId, quantity: Number(qty) })
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": key
+      },
+      body: JSON.stringify({ itemId, quantity: qty }),
+      signal: controller.signal
     });
-    const data = await res.json();
 
-    if (res.ok) {
-      alert(`Замовлення створено. Сума: ${data.total} грн`);
-      loadOrders();
-    } else {
-      alert(`Помилка: ${data.error}`);
-    }
-  } catch (err) {
-    alert("Помилка створення замовлення");
-  }
-}
-
-// Завантаження замовлень
-async function loadOrders() {
-  const container = document.getElementById("ordersList");
-  container.innerHTML = "Завантаження...";
-
-  try {
-    const res = await fetch(`${API_URL}/orders`);
-    const orders = await res.json();
-    container.innerHTML = "";
-
-    if (orders.length === 0) {
-      container.innerHTML = "<p>Замовлень ще немає.</p>";
+    if (res.status === 429) {
+      const wait = res.headers.get("Retry-After") || 3;
+      setTimeout(() => createOrder(itemId), wait * 1000);
       return;
     }
 
-    orders.forEach(order => {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <p><b>ID:</b> ${order.id}</p>
-        <p><b>Товар:</b> ${order.item.name}</p>
-        <p><b>Кількість:</b> ${order.quantity}</p>
-        <p><b>Сума:</b> ${order.total} грн</p>
-        <button class="btn deleteBtn" data-id="${order.id}">Видалити</button>
-      `;
-      container.appendChild(div);
-    });
+    if (!res.ok) throw new Error();
 
-    // Кнопки видалити
-    document.querySelectorAll(".deleteBtn").forEach(btn => {
-      btn.onclick = async () => {
-        const id = btn.dataset.id;
-        if (confirm("Видалити це замовлення?")) {
-          await fetch(`${API_URL}/orders/${id}`, { method: "DELETE" });
-          loadOrders();
-        }
-      };
-    });
+    errorStreak = 0;
+    alert("Замовлення створено");
+    loadOrders();
 
-  } catch (err) {
-    container.innerHTML = `<p style="color:red;">Помилка завантаження замовлень: ${err}</p>`;
-  }
-}
-
-// Health check
-async function checkHealth() {
-  const result = document.getElementById("healthResult");
-  result.textContent = "Перевірка...";
-  try {
-    const res = await fetch(`${API_URL}/health`);
-    const data = await res.json();
-    result.textContent = JSON.stringify(data, null, 2);
   } catch {
-    result.textContent = "Помилка перевірки сервера";
+    errorStreak++;
+    if (errorStreak >= 3) enableDegradedMode();
   }
 }
 
+/* LOAD ORDERS + DELETE */
+async function loadOrders() {
+  const res = await fetch(`${API_URL}/orders`);
+  const orders = await res.json();
+  const box = document.getElementById("ordersList");
+  box.innerHTML = "";
 
+  if (!orders.length) {
+    box.innerHTML = "<p>Замовлень ще немає</p>";
+    return;
+  }
 
-// Автозавантаження
-window.addEventListener("DOMContentLoaded", () => {
-  loadItems();
+  orders.forEach(o => {
+    box.innerHTML += `
+      <div class="card">
+        ${o.item.name} × ${o.quantity} = ${o.total} грн<br>
+        <button class="btn danger" onclick="deleteOrder('${o.id}')">Видалити</button>
+      </div>`;
+  });
+}
+
+async function deleteOrder(id) {
+  await fetch(`${API_URL}/orders/${id}`, { method: "DELETE" });
   loadOrders();
-});
+}
+
+/* HEALTH */
+async function checkHealth() {
+  const res = await fetch(`${API_URL}/health`);
+  document.getElementById("healthResult").textContent =
+    JSON.stringify(await res.json(), null, 2);
+}
 </script>
 
 </body>
