@@ -240,18 +240,26 @@
 // ----- Завантаження замовлень -----
 async function loadOrders() {
   const container = document.getElementById("ordersList");
-  container.innerHTML = "Завантаження...";
+
+  // Очистка контейнера замовлень без затирання меню
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+
+  const loading = document.createElement("p");
+  loading.textContent = "Завантаження...";
+  container.appendChild(loading);
 
   try {
     const response = await fetch(API_URL + "/orders");
-    if (!response.ok) throw new Error("Не вдалося отримати замовлення");
-
     const orders = await response.json();
 
-    container.innerHTML = "";
+    container.removeChild(loading);
 
     if (orders.length === 0) {
-      container.innerHTML = "<p>Замовлень немає</p>";
+      const empty = document.createElement("p");
+      empty.textContent = "Замовлень ще немає";
+      container.appendChild(empty);
       return;
     }
 
@@ -264,57 +272,32 @@ async function loadOrders() {
         <p><b>Товар:</b> ${order.item.name}</p>
         <p><b>Кількість:</b> ${order.quantity}</p>
         <p><b>Сума:</b> ${order.total} грн</p>
-        <button class="deleteBtn">Видалити</button>
       `;
 
-      // Обробник кнопки Видалити
-      div.querySelector(".deleteBtn").addEventListener("click", async () => {
-        if (!confirm(`Ви дійсно хочете видалити замовлення ${order.id}?`)) return;
+      // ----- Кнопка видалити -----
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "Видалити";
+      delBtn.addEventListener("click", async () => {
+        const confirmDel = confirm(`Видалити замовлення ${order.id}?`);
+        if (!confirmDel) return;
+
         try {
-          const res = await fetch(API_URL + `/orders/${order.id}`, { method: "DELETE" });
-          if (!res.ok) throw new Error("Помилка видалення");
-          loadOrders(); // оновлюємо список після видалення
-        } catch (err) {
-          alert("Помилка при видаленні: " + err.message);
-        }
-      });
-
-      container.appendChild(div);
-    });
-  } catch (err) {
-    container.innerHTML = `<p style="color:red;">Помилка при завантаженні замовлень: ${err.message}</p>`;
-    console.error(err);
-  }
-}
-
-// ----- Викликаємо завантаження при відкритті сторінки -----
-document.addEventListener("DOMContentLoaded", () => {
-  loadOrders();
-});
-
-// ----- Додатково можна пов'язати з кнопкою "Оновити" -----
-const refreshBtn = document.getElementById("refreshOrdersBtn");
-if (refreshBtn) {
-  refreshBtn.addEventListener("click", loadOrders);
-}
-
-   // Додаємо обробник кнопки видалення
-      div.querySelector(".deleteBtn").addEventListener("click", async () => {
-        try {
-          await fetch(API_URL + `/orders/${order.id}`, { method: "DELETE" });
-          loadOrders(); // оновлюємо список після видалення
+          await fetch(`${API_URL}/orders/${order.id}`, { method: "DELETE" });
+          div.remove(); // прибираємо замовлення з DOM
         } catch (err) {
           alert("Помилка при видаленні: " + err);
         }
       });
 
+      div.appendChild(delBtn);
       container.appendChild(div);
     });
   } catch (err) {
-    container.innerHTML = "Помилка при завантаженні замовлень";
+    container.innerHTML = "<p>Помилка завантаження замовлень</p>";
     console.error(err);
   }
 }
+
 
 
   // ----- Health check
