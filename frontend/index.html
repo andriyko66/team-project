@@ -175,6 +175,7 @@ function showPage(pageId) {
   pages.forEach(p => p.classList.remove("active"));
   document.getElementById(pageId).classList.add("active");
 
+  // Автозавантаження потрібних даних
   if (pageId === "items") loadItems();
   if (pageId === "orders") loadOrders();
 }
@@ -185,9 +186,8 @@ async function loadItems() {
   container.innerHTML = "Завантаження...";
 
   try {
-    const response = await fetch(API_URL + "/items");
-    const items = await response.json();
-
+    const res = await fetch(API_URL + "/items");
+    const items = await res.json();
     container.innerHTML = "";
 
     items.forEach(item => {
@@ -206,23 +206,25 @@ async function loadItems() {
     });
 
   } catch (err) {
-    container.innerHTML = "<p style='color:red;'>Помилка завантаження товарів</p>";
+    container.innerHTML = "Помилка завантаження товарів";
   }
 }
 
 // ----- Створення замовлення -----
 async function createOrder(itemId) {
-  const qty = document.getElementById("qty-" + itemId).value;
+  const qty = Number(document.getElementById("qty-" + itemId).value);
 
   try {
-    const response = await fetch(API_URL + "/orders", {
+    const res = await fetch(API_URL + "/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId: itemId, quantity: Number(qty) })
+      body: JSON.stringify({ itemId, quantity: qty })
     });
-    const data = await response.json();
-    alert("Замовлення створено. Сума: " + data.total + " грн");
-    loadOrders(); // одразу оновлюємо список замовлень
+
+    const data = await res.json();
+    alert(`Замовлення створено. Сума: ${data.total} грн`);
+    loadOrders(); // оновлюємо список замовлень після створення
+
   } catch (err) {
     alert("Помилка створення замовлення");
   }
@@ -234,9 +236,8 @@ async function loadOrders() {
   container.innerHTML = "Завантаження...";
 
   try {
-    const response = await fetch(API_URL + "/orders");
-    const orders = await response.json();
-
+    const res = await fetch(API_URL + "/orders");
+    const orders = await res.json();
     container.innerHTML = "";
 
     if (orders.length === 0) {
@@ -247,59 +248,52 @@ async function loadOrders() {
     orders.forEach(order => {
       const div = document.createElement("div");
       div.className = "card";
-      div.style.border = "1px solid #ccc";
-      div.style.padding = "10px";
-      div.style.marginBottom = "8px";
-      div.style.borderRadius = "5px";
 
       div.innerHTML = `
         <p><b>ID:</b> ${order.id}</p>
         <p><b>Товар:</b> ${order.item.name}</p>
         <p><b>Кількість:</b> ${order.quantity}</p>
         <p><b>Сума:</b> ${order.total} грн</p>
-        <button class="btn" onclick="deleteOrder('${order.id}')">Видалити</button>
+        <button class="btn deleteBtn" data-id="${order.id}">Видалити</button>
       `;
 
       container.appendChild(div);
     });
 
+    // Прив’язка кнопок видалити
+    const deleteBtns = container.querySelectorAll(".deleteBtn");
+    deleteBtns.forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (confirm("Видалити це замовлення?")) {
+          await fetch(`${API_URL}/orders/${id}`, { method: "DELETE" });
+          loadOrders();
+        }
+      });
+    });
+
   } catch (err) {
-    container.innerHTML = `<p style="color:red;">Помилка завантаження замовлень: ${err}</p>`;
+    container.innerHTML = `<p style="color:red;">Помилка завантаження замовлень</p>`;
   }
 }
 
-// ----- Видалення замовлення -----
-async function deleteOrder(id) {
-  if (!confirm("Видалити це замовлення?")) return;
-
-  try {
-    await fetch(`${API_URL}/orders/${id}`, { method: "DELETE" });
-    loadOrders();
-  } catch (err) {
-    alert("Помилка видалення замовлення");
-  }
-}
-
-// ----- Перевірка статусу сервера -----
+// ----- Статус сервера -----
 async function checkHealth() {
   const result = document.getElementById("healthResult");
   result.textContent = "Перевірка...";
 
   try {
-    const response = await fetch(API_URL + "/health");
-    const data = await response.json();
+    const res = await fetch(API_URL + "/health");
+    const data = await res.json();
     result.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
     result.textContent = "Помилка при перевірці сервера";
   }
 }
 
-// ----- Автозавантаження -----
+// ----- Автоматична ініціалізація -----
 window.addEventListener("DOMContentLoaded", () => {
-  loadItems();
-  loadOrders();
+  showPage("home");
 });
 </script>
 
-</body>
-</html>
