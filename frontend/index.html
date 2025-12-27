@@ -137,10 +137,17 @@
 
   <!-- ===== HEALTH ===== -->
   <div id="health" class="page">
-    <h2>Статус сервера</h2>
-    <button class="btn" onclick="checkHealth()">Перевірити</button>
-    <pre id="healthResult"></pre>
-  </div>
+  <h2>Статус сервера</h2>
+
+  <button class="btn" onclick="checkHealth()">Перевірити</button>
+  <button class="btn" style="margin-left:10px" onclick="testIdempotency()">
+    Тест ідемпотентності
+  </button>
+
+  <pre id="healthResult"></pre>
+  <pre id="idempotencyResult"></pre>
+</div>
+
 </main>
 
 <footer>
@@ -256,7 +263,58 @@ async function checkHealth() {
   document.getElementById("healthResult").textContent =
     JSON.stringify(await res.json(), null, 2);
 }
+  <script>
+async function testIdempotency() {
+  const output = document.getElementById("idempotencyResult");
+  output.textContent = "Тест ідемпотентності...\n";
+
+  const idemKey = "test-key-123"; // спеціально фіксований
+
+  const body = {
+    itemId: "1",
+    quantity: 1
+  };
+
+  try {
+    // ПЕРШИЙ запит
+    const r1 = await fetch(`${API_URL}/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idemKey
+      },
+      body: JSON.stringify(body)
+    });
+    const d1 = await r1.json();
+
+    // ДРУГИЙ запит з тим самим ключем
+    const r2 = await fetch(`${API_URL}/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idemKey
+      },
+      body: JSON.stringify(body)
+    });
+    const d2 = await r2.json();
+
+    output.textContent =
+`ПЕРШИЙ запит:
+id: ${d1.id}
+idempotent: ${d1.idempotent}
+
+ДРУГИЙ запит (той самий ключ):
+id: ${d2.id}
+idempotent: ${d2.idempotent}
+
+РЕЗУЛЬТАТ:
+${d1.id === d2.id ? "✅ Ідемпотентність ПРАЦЮЄ" : "❌ ПОМИЛКА"}`;
+  } catch (e) {
+    output.textContent = "❌ Помилка тесту";
+  }
+}
 </script>
+
 
 </body>
 </html>
