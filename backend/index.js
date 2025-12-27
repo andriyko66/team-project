@@ -55,16 +55,16 @@ app.get("/orders", (req, res) => {
   res.json(orders);
 });
 
-// --- Create order
+// ----- POST /orders -----
 app.post("/orders", (req, res) => {
   const { itemId, quantity } = req.body;
 
   const item = items.find(i => i.id === itemId);
   if (!item) {
-    return res.status(400).json({ error: "Item not found" });
+    return res.status(400).json({ error: "Товар не знайдено" });
   }
 
-  const order = {
+  const newOrder = {
     id: randomUUID(),
     item,
     quantity,
@@ -72,9 +72,10 @@ app.post("/orders", (req, res) => {
     createdAt: new Date().toISOString()
   };
 
-  orders.push(order);
-  res.status(201).json(order);
+  orders.push(newOrder);
+  res.status(201).json(newOrder);
 });
+
 
 // --- Delete order
 app.delete("/orders/:id", (req, res) => {
