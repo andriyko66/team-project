@@ -95,6 +95,16 @@ app.post("/orders", (req, res) => {
   res.status(201).json(order);
 });
 
+// ----- Видалення замовлення
+app.delete("/orders/:id", (req, res) => {
+  const id = req.params.id;
+  if (!idemStore.has(id)) { // idemStore зараз у тебе зберігає замовлення по ключу
+    return res.status(404).json({ message: "Замовлення не знайдено" });
+  }
+  idemStore.delete(id);
+  res.json({ message: `Замовлення ${id} видалено` });
+});
+
 /* =========================
    404 HANDLER (ВАЖЛИВО!)
 ========================= */
