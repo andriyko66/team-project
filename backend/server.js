@@ -15,11 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // ===== Підключення фронтенду =====
-// Якщо index.html лежить прямо в backend
-//app.use(express.static(path.join(__dirname))); 
-
-// Якщо у тебе є окрема папка frontend, наприклад:
-app.use(express.static(path.join(__dirname, "frontend")));
+app.use(express.static(path.join(__dirname, "../frontend"))); // <-- вказуємо правильний шлях
 
 // ===== IN-MEMORY DATA =====
 const items = [
@@ -40,11 +36,7 @@ app.use((req, res, next) => {
 
 // ===== ROUTES =====
 app.get("/", (req, res) => {
-  // якщо index.html в backend
-  // res.sendFile(path.join(__dirname, "index.html"));
-  
-  // якщо в папці frontend:
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+  res.sendFile(path.join(__dirname, "../frontend/index.html")); // <-- тут теж вказуємо правильний шлях
 });
 
 app.get("/health", (req, res) => {
