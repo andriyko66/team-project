@@ -94,17 +94,11 @@
 
 <body>
 
-<!-- ===============================
-     HEADER
-=============================== -->
 <header>
   <h1>Навчальний Web-проєкт</h1>
   <p>Frontend + Backend (Express)</p>
 </header>
 
-<!-- ===============================
-     NAVIGATION
-=============================== -->
 <nav>
   <button onclick="showPage('home')">Головна</button>
   <button onclick="showPage('items')">Товари</button>
@@ -112,19 +106,12 @@
   <button onclick="showPage('health')">Статус сервера</button>
 </nav>
 
-<!-- ===============================
-     MAIN CONTENT
-=============================== -->
 <main>
-
   <!-- ===== HOME ===== -->
   <div id="home" class="page active">
     <div class="card">
       <h2>Вітаю 👋</h2>
-      <p>
-        Це демонстраційний веб-додаток для лабораторної роботи.
-        Тут реалізовано:
-      </p>
+      <p>Це демонстраційний веб-додаток для лабораторної роботи.</p>
       <ul>
         <li>Кілька сторінок</li>
         <li>Робота з API</li>
@@ -144,7 +131,7 @@
   <div id="orders" class="page">
     <h2>Замовлення</h2>
     <button class="btn" onclick="loadOrders()">Оновити список</button>
-    <div id="ordersList"></div>
+    <div id="ordersList" style="margin-top:10px;"></div>
   </div>
 
   <!-- ===== HEALTH ===== -->
@@ -153,12 +140,8 @@
     <button class="btn" onclick="checkHealth()">Перевірити</button>
     <pre id="healthResult"></pre>
   </div>
-
 </main>
 
-<!-- ===============================
-     FOOTER
-=============================== -->
 <footer>
   <p>Лабораторна робота • 2025</p>
 </footer>
@@ -166,8 +149,6 @@
 <!-- ===============================
      JAVASCRIPT
 =============================== -->
-<script>
-<script>
 <script>
 const API_URL = "http://localhost:3000";
 
@@ -301,4 +282,5 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
-
+</body>
+</html>
