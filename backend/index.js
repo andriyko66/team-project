@@ -15,27 +15,12 @@ app.use(express.json());
    IN-MEMORY DATA
 ========================= */
 const items = [
-  {
-    id: "1",
-    name: "Хліб",
-    description: "Свіжий пшеничний хліб",
-    price: 25
-  },
-  {
-    id: "2",
-    name: "Молоко",
-    description: "Молоко 2.5%",
-    price: 38
-  },
-  {
-    id: "3",
-    name: "Сир",
-    description: "Твердий сир",
-    price: 120
-  }
+  { id: "1", name: "Хліб", description: "Свіжий пшеничний хліб", price: 25 },
+  { id: "2", name: "Молоко", description: "Молоко 2.5%", price: 38 },
+  { id: "3", name: "Сир", description: "Твердий сир", price: 120 }
 ];
 
-const orders = [];
+const orders = []; // глобальний масив замовлень
 
 /* =========================
    REQUEST ID
@@ -51,36 +36,23 @@ app.use((req, res, next) => {
    ROUTES
 ========================= */
 
-// --- Health
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    time: new Date().toISOString(),
-    requestId: req.requestId
-  });
+// Health
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString(), requestId: _req.requestId });
 });
 
-// --- Get items
-app.get("/items", (req, res) => {
-  res.json(items);
-});
+// Get items
+app.get("/items", (_req, res) => res.json(items));
 
-// --- Get orders
-app.get("/orders", (req, res) => {
-  res.json(orders);
-});
+// Get orders
+app.get("/orders", (_req, res) => res.json(orders));
 
-// --- Create order
+// Create order
 app.post("/orders", (req, res) => {
   const { itemId, quantity } = req.body;
 
   const item = items.find(i => i.id === itemId);
-
-  if (!item) {
-    return res.status(400).json({
-      error: "Item not found"
-    });
-  }
+  if (!item) return res.status(400).json({ error: "Item not found" });
 
   const order = {
     id: randomUUID(),
@@ -91,34 +63,27 @@ app.post("/orders", (req, res) => {
   };
 
   orders.push(order);
-
   res.status(201).json(order);
 });
 
-// ----- Видалення замовлення
+// Delete order
 app.delete("/orders/:id", (req, res) => {
-  const id = req.params.id;
-  if (!idemStore.has(id)) { // idemStore зараз у тебе зберігає замовлення по ключу
-    return res.status(404).json({ message: "Замовлення не знайдено" });
-  }
-  idemStore.delete(id);
+  const { id } = req.params;
+  const index = orders.findIndex(o => o.id === id);
+  if (index === -1) return res.status(404).json({ error: "Замовлення не знайдено" });
+
+  orders.splice(index, 1);
   res.json({ message: `Замовлення ${id} видалено` });
 });
 
 /* =========================
-   404 HANDLER (ВАЖЛИВО!)
+   404 HANDLER
 ========================= */
 app.use((req, res) => {
-  res.status(404).json({
-    error: "Route not found",
-    method: req.method,
-    path: req.originalUrl
-  });
+  res.status(404).json({ error: "Route not found", method: req.method, path: req.originalUrl });
 });
 
 /* =========================
    START SERVER
 ========================= */
-app.listen(PORT, () => {
-  console.log(`✅ Server running http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running http://localhost:${PORT}`));
