@@ -167,33 +167,31 @@
      JAVASCRIPT
 =============================== -->
 <script>
+<script>
 const API_URL = "http://localhost:3000";
 
-// ----- Навігація між сторінками -----
+// ===== Навігація =====
 function showPage(pageId) {
-  const pages = document.querySelectorAll(".page");
-  pages.forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(pageId).classList.add("active");
 
-  // Автозавантаження потрібних даних
   if (pageId === "items") loadItems();
   if (pageId === "orders") loadOrders();
 }
 
-// ----- Завантаження товарів -----
+// ===== Завантаження товарів =====
 async function loadItems() {
   const container = document.getElementById("itemsList");
   container.innerHTML = "Завантаження...";
 
   try {
-    const res = await fetch(API_URL + "/items");
+    const res = await fetch(`${API_URL}/items`);
     const items = await res.json();
     container.innerHTML = "";
 
     items.forEach(item => {
       const div = document.createElement("div");
       div.className = "card";
-
       div.innerHTML = `
         <h3>${item.name}</h3>
         <p>${item.description}</p>
@@ -201,45 +199,47 @@ async function loadItems() {
         <input type="number" min="1" value="1" id="qty-${item.id}">
         <button class="btn" onclick="createOrder('${item.id}')">Замовити</button>
       `;
-
       container.appendChild(div);
     });
-
   } catch (err) {
-    container.innerHTML = "Помилка завантаження товарів";
+    container.innerHTML = `<p style="color:red;">Помилка завантаження товарів: ${err}</p>`;
   }
 }
 
-// ----- Створення замовлення -----
+// ===== Створення замовлення =====
 async function createOrder(itemId) {
-  const qty = Number(document.getElementById("qty-" + itemId).value);
+  const qty = document.getElementById(`qty-${itemId}`).value;
 
   try {
-    const res = await fetch(API_URL + "/orders", {
+    const res = await fetch(`${API_URL}/orders`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId, quantity: qty })
+      body: JSON.stringify({ itemId, quantity: Number(qty) })
     });
 
     const data = await res.json();
-    alert(`Замовлення створено. Сума: ${data.total} грн`);
-    loadOrders(); // оновлюємо список замовлень після створення
 
+    if (res.ok) {
+      alert(`Замовлення створено. Сума: ${data.total} грн`);
+      loadOrders();
+    } else {
+      alert(`Помилка: ${data.error}`);
+    }
   } catch (err) {
     alert("Помилка створення замовлення");
   }
 }
 
-// ----- Завантаження замовлень -----
+// ===== Завантаження замовлень =====
 async function loadOrders() {
   const container = document.getElementById("ordersList");
   container.innerHTML = "Завантаження...";
 
   try {
-    const res = await fetch(API_URL + "/orders");
+    const res = await fetch(`${API_URL}/orders`);
     const orders = await res.json();
-    container.innerHTML = "";
 
+    container.innerHTML = "";
     if (orders.length === 0) {
       container.innerHTML = "<p>Замовлень ще немає.</p>";
       return;
@@ -248,6 +248,10 @@ async function loadOrders() {
     orders.forEach(order => {
       const div = document.createElement("div");
       div.className = "card";
+      div.style.border = "1px solid #ccc";
+      div.style.padding = "10px";
+      div.style.marginBottom = "8px";
+      div.style.borderRadius = "5px";
 
       div.innerHTML = `
         <p><b>ID:</b> ${order.id}</p>
@@ -256,44 +260,43 @@ async function loadOrders() {
         <p><b>Сума:</b> ${order.total} грн</p>
         <button class="btn deleteBtn" data-id="${order.id}">Видалити</button>
       `;
-
       container.appendChild(div);
     });
 
-    // Прив’язка кнопок видалити
-    const deleteBtns = container.querySelectorAll(".deleteBtn");
-    deleteBtns.forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-id");
+    // Прив'язка кнопок видалити
+    document.querySelectorAll(".deleteBtn").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
         if (confirm("Видалити це замовлення?")) {
           await fetch(`${API_URL}/orders/${id}`, { method: "DELETE" });
           loadOrders();
         }
-      });
+      };
     });
 
   } catch (err) {
-    container.innerHTML = `<p style="color:red;">Помилка завантаження замовлень</p>`;
+    container.innerHTML = `<p style="color:red;">Помилка завантаження замовлень: ${err}</p>`;
   }
 }
 
-// ----- Статус сервера -----
+// ===== Health check =====
 async function checkHealth() {
   const result = document.getElementById("healthResult");
   result.textContent = "Перевірка...";
 
   try {
-    const res = await fetch(API_URL + "/health");
+    const res = await fetch(`${API_URL}/health`);
     const data = await res.json();
     result.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
-    result.textContent = "Помилка при перевірці сервера";
+    result.textContent = "Помилка перевірки сервера";
   }
 }
 
-// ----- Автоматична ініціалізація -----
+// ===== Автозавантаження =====
 window.addEventListener("DOMContentLoaded", () => {
-  showPage("home");
+  loadItems();
+  loadOrders();
 });
 </script>
 
