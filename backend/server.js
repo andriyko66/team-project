@@ -26,18 +26,6 @@ const items = [
 
 const orders = [];
 
-const idempotencyStore = new Map();
-
-// ===== IDEMPOTENT CREATE ORDER =====
-app.post("/orders-idempotent", (req, res) => {
-  const idemKey = req.header("Idempotency-Key");
-
-  if (!idemKey) {
-    return res.status(400).json({
-      error: "Idempotency-Key header required",
-      requestId: req.requestId
-    });
-  }
 
   // якщо вже був такий ключ — повертаємо той самий результат
   if (idempotencyStore.has(idemKey)) {
