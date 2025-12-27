@@ -1,43 +1,94 @@
+@@ -1,322 +1,284 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>Лабораторна робота</title>
+  <title>Лабораторна робота — Web App</title>
 
+  <!-- ===============================
+       СТИЛІ
+  =============================== -->
   <style>
-    body { margin: 0; font-family: Arial; background: #f4f4f4; }
-    header { background: #222; color: white; padding: 15px; text-align: center; }
-    nav { background: #333; display: flex; justify-content: center; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #222;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #333;
+    }
+
     nav button {
       background: none;
       border: none;
       color: white;
       padding: 15px 20px;
       cursor: pointer;
+      font-size: 16px;
     }
-    nav button:hover { background: #555; }
-    main { padding: 20px; }
-    .page { display: none; }
-    .page.active { display: block; }
+
+    nav button:hover {
+      background-color: #555;
+    }
+
+    main {
+      padding: 20px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
     .card {
       background: white;
       padding: 15px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
     .btn {
-      background: #007bff;
+      background-color: #007bff;
       color: white;
       border: none;
       padding: 8px 12px;
       cursor: pointer;
+      border-radius: 4px;
     }
-    .danger { background: #dc3545; }
-    .banner {
-      background: orange;
-      padding: 10px;
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    input {
+      padding: 6px;
+      margin-right: 5px;
+    }
+
+    footer {
       text-align: center;
-      font-weight: bold;
+      padding: 15px;
+      background-color: #222;
+      color: white;
+      margin-top: 30px;
     }
   </style>
 </head>
@@ -45,7 +96,8 @@
 <body>
 
 <header>
-  <h1>Навчальний Web-додаток</h1>
+  <h1>Навчальний Web-проєкт</h1>
+  <p>Frontend + Backend (Express)</p>
 </header>
 
 <nav>
@@ -55,27 +107,35 @@
   <button onclick="showPage('health')">Статус сервера</button>
 </nav>
 
-<div id="degraded"></div>
-
 <main>
+  <!-- ===== HOME ===== -->
   <div id="home" class="page active">
     <div class="card">
-      <h2>Вітаю</h2>
-      <p>Лабораторна робота з REST, ідемпотентністю та fault tolerance.</p>
+      <h2>Вітаю 👋</h2>
+      <p>Це демонстраційний веб-додаток для лабораторної роботи.</p>
+      <ul>
+        <li>Кілька сторінок</li>
+        <li>Робота з API</li>
+        <li>Замовлення товарів</li>
+        <li>Логіка на JavaScript</li>
+      </ul>
     </div>
   </div>
 
+  <!-- ===== ITEMS ===== -->
   <div id="items" class="page">
-    <h2>Товари</h2>
+    <h2>Список товарів</h2>
     <div id="itemsList"></div>
   </div>
 
+  <!-- ===== ORDERS ===== -->
   <div id="orders" class="page">
     <h2>Замовлення</h2>
-    <button class="btn" onclick="loadOrders()">Оновити</button>
-    <div id="ordersList"></div>
+    <button class="btn" onclick="loadOrders()">Оновити список</button>
+    <div id="ordersList" style="margin-top:10px;"></div>
   </div>
 
+  <!-- ===== HEALTH ===== -->
   <div id="health" class="page">
     <h2>Статус сервера</h2>
     <button class="btn" onclick="checkHealth()">Перевірити</button>
@@ -83,6 +143,9 @@
   </div>
 </main>
 
+<footer>
+  <p>Лабораторна робота • 2025</p>
+</footer>
 <script>
 const API_URL = "http://localhost:3000";
 let errorStreak = 0;
