@@ -16,10 +16,10 @@ app.use(express.json());
 
 // ===== Підключення фронтенду =====
 // Якщо index.html лежить прямо в backend
-app.use(express.static(path.join(__dirname))); 
+//app.use(express.static(path.join(__dirname))); 
 
 // Якщо у тебе є окрема папка frontend, наприклад:
-// app.use(express.static(path.join(__dirname, "frontend")));
+app.use(express.static(path.join(__dirname, "frontend")));
 
 // ===== IN-MEMORY DATA =====
 const items = [
