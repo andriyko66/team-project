@@ -146,6 +146,18 @@
   <p>Лабораторна робота • 2025</p>
 </footer>
 
+  <!-- ===== IDEMPOTENCY TEST ===== -->
+<div id="idempotency" class="page">
+  <h2>Тест ідемпотентності</h2>
+
+  <button class="btn" onclick="sendIdempotentOrder()">
+    Відправити POST з Idempotency-Key
+  </button>
+
+  <pre id="idemResult"></pre>
+</div>
+
+
 <!-- ===============================
      JAVASCRIPT
 =============================== -->
@@ -160,6 +172,8 @@ function showPage(pageId) {
   if (pageId === "items") loadItems();
   if (pageId === "orders") loadOrders();
 }
+
+  <button onclick="showPage('idempotency')">Ідемпотентність</button>
 
 // Завантаження товарів
 async function loadItems() {
@@ -267,6 +281,35 @@ async function checkHealth() {
     result.textContent = "Помилка перевірки сервера";
   }
 }
+
+  // ===== IDEMPOTENT POST =====
+let idemKey = crypto.randomUUID(); // той самий ключ при повторі
+
+async function sendIdempotentOrder() {
+  const output = document.getElementById("idemResult");
+  output.textContent = "Відправка...";
+
+  try {
+    const res = await fetch(`${API_URL}/orders-idempotent`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idemKey
+      },
+      body: JSON.stringify({
+        itemId: "1",
+        quantity: 2
+      })
+    });
+
+    const data = await res.json();
+
+    output.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    output.textContent = "Помилка запиту";
+  }
+}
+
 
 // Автозавантаження
 window.addEventListener("DOMContentLoaded", () => {
