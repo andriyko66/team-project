@@ -26,6 +26,59 @@ const items = [
 
 const orders = [];
 
+const idempotencyStore = new Map();
+
+// ===== IDEMPOTENT CREATE ORDER =====
+app.post("/orders-idempotent", (req, res) => {
+  const idemKey = req.header("Idempotency-Key");
+
+  if (!idemKey) {
+    return res.status(400).json({
+      error: "Idempotency-Key header required",
+      requestId: req.requestId
+    });
+  }
+
+  // якщо вже був такий ключ — повертаємо той самий результат
+  if (idempotencyStore.has(idemKey)) {
+    const savedResponse = idempotencyStore.get(idemKey);
+    return res.status(201).json({
+      ...savedResponse,
+      requestId: req.requestId,
+      idempotent: true
+    });
+  }
+
+  const { itemId, quantity } = req.body;
+
+  const item = items.find(i => i.id === itemId);
+  if (!item) {
+    return res.status(400).json({
+      error: "Item not found",
+      requestId: req.requestId
+    });
+  }
+
+  const order = {
+    id: randomUUID(),
+    item,
+    quantity,
+    total: item.price * quantity,
+    createdAt: new Date().toISOString()
+  };
+
+  orders.push(order);
+
+  // ЗБЕРІГАЄМО результат
+  idempotencyStore.set(idemKey, order);
+
+  res.status(201).json({
+    ...order,
+    requestId: req.requestId,
+    idempotent: false
+  });
+});
+
 // ===== REQUEST ID =====
 app.use((req, res, next) => {
   const id = randomUUID();
