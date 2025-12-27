@@ -263,7 +263,7 @@ async function checkHealth() {
   document.getElementById("healthResult").textContent =
     JSON.stringify(await res.json(), null, 2);
 }
-  <script>
+  
 async function testIdempotency() {
   const output = document.getElementById("idempotencyResult");
   output.textContent = "Тест ідемпотентності...\n";
@@ -313,6 +313,7 @@ ${d1.id === d2.id ? "✅ Ідемпотентність ПРАЦЮЄ" : "❌ П�
     output.textContent = "❌ Помилка тесту";
   }
 }
+  
 </script>
 
 
