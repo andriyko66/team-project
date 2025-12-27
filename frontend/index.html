@@ -152,7 +152,7 @@
 <script>
 const API_URL = "http://localhost:3000";
 
-// ===== Навігація =====
+// Навігація
 function showPage(pageId) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(pageId).classList.add("active");
@@ -161,7 +161,7 @@ function showPage(pageId) {
   if (pageId === "orders") loadOrders();
 }
 
-// ===== Завантаження товарів =====
+// Завантаження товарів
 async function loadItems() {
   const container = document.getElementById("itemsList");
   container.innerHTML = "Завантаження...";
@@ -188,7 +188,7 @@ async function loadItems() {
   }
 }
 
-// ===== Створення замовлення =====
+// Створення замовлення
 async function createOrder(itemId) {
   const qty = document.getElementById(`qty-${itemId}`).value;
 
@@ -198,7 +198,6 @@ async function createOrder(itemId) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemId, quantity: Number(qty) })
     });
-
     const data = await res.json();
 
     if (res.ok) {
@@ -212,7 +211,7 @@ async function createOrder(itemId) {
   }
 }
 
-// ===== Завантаження замовлень =====
+// Завантаження замовлень
 async function loadOrders() {
   const container = document.getElementById("ordersList");
   container.innerHTML = "Завантаження...";
@@ -220,8 +219,8 @@ async function loadOrders() {
   try {
     const res = await fetch(`${API_URL}/orders`);
     const orders = await res.json();
-
     container.innerHTML = "";
+
     if (orders.length === 0) {
       container.innerHTML = "<p>Замовлень ще немає.</p>";
       return;
@@ -230,11 +229,6 @@ async function loadOrders() {
     orders.forEach(order => {
       const div = document.createElement("div");
       div.className = "card";
-      div.style.border = "1px solid #ccc";
-      div.style.padding = "10px";
-      div.style.marginBottom = "8px";
-      div.style.borderRadius = "5px";
-
       div.innerHTML = `
         <p><b>ID:</b> ${order.id}</p>
         <p><b>Товар:</b> ${order.item.name}</p>
@@ -245,7 +239,7 @@ async function loadOrders() {
       container.appendChild(div);
     });
 
-    // Прив'язка кнопок видалити
+    // Кнопки видалити
     document.querySelectorAll(".deleteBtn").forEach(btn => {
       btn.onclick = async () => {
         const id = btn.dataset.id;
@@ -261,21 +255,20 @@ async function loadOrders() {
   }
 }
 
-// ===== Health check =====
+// Health check
 async function checkHealth() {
   const result = document.getElementById("healthResult");
   result.textContent = "Перевірка...";
-
   try {
     const res = await fetch(`${API_URL}/health`);
     const data = await res.json();
     result.textContent = JSON.stringify(data, null, 2);
-  } catch (err) {
+  } catch {
     result.textContent = "Помилка перевірки сервера";
   }
 }
 
-// ===== Автозавантаження =====
+// Автозавантаження
 window.addEventListener("DOMContentLoaded", () => {
   loadItems();
   loadOrders();
