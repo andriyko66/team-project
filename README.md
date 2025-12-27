@@ -35,6 +35,9 @@ git commit -m "message"
 git pull origin main
 git push origin main
 
+![CI](https://github.com/andriyko66/team-project/actions/workflows/ci.yml/badge.svg)
+
+
 
 
 
