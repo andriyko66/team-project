@@ -1,6 +1,11 @@
 import express from "express";
 import cors from "cors";
 import { randomUUID } from "crypto";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3000;
@@ -9,11 +14,8 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Логування запитів
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  next();
-});
+// ===== Статичні файли (фронтенд) =====
+app.use(express.static(path.join(__dirname, "frontend")));
 
 // ===== IN-MEMORY DATA =====
 const items = [
@@ -26,14 +28,20 @@ const orders = [];
 
 // ===== REQUEST ID =====
 app.use((req, res, next) => {
-  req.requestId = randomUUID();
-  res.setHeader("X-Request-Id", req.requestId);
+  const id = randomUUID();
+  req.requestId = id;
+  res.setHeader("X-Request-Id", id);
   next();
 });
 
 // ===== ROUTES =====
 
-// --- Health check ---
+// --- Головна сторінка
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
+
+// --- Health check
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -42,28 +50,30 @@ app.get("/health", (req, res) => {
   });
 });
 
-// --- Get all items ---
+// --- Get all items
 app.get("/items", (req, res) => {
   res.json(items);
 });
 
-// --- Get all orders ---
+// --- Get all orders
 app.get("/orders", (req, res) => {
   res.json(orders);
 });
 
-// --- Create a new order ---
+// --- Create a new order
 app.post("/orders", (req, res) => {
   const { itemId, quantity } = req.body;
 
-  if (!itemId || typeof quantity !== "number" || quantity <= 0) {
-    return res.status(400).json({ error: "Вкажіть правильні itemId та quantity" });
+  if (!itemId || !quantity) {
+    return res.status(400).json({ error: "Вкажіть itemId та quantity" });
   }
 
   const item = items.find(i => i.id === itemId);
-  if (!item) return res.status(404).json({ error: "Товар не знайдено" });
+  if (!item) {
+    return res.status(400).json({ error: "Товар не знайдено" });
+  }
 
-  const order = {
+  const newOrder = {
     id: randomUUID(),
     item,
     quantity,
@@ -71,16 +81,18 @@ app.post("/orders", (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  orders.push(order);
-  res.status(201).json(order);
+  orders.push(newOrder);
+  res.status(201).json(newOrder);
 });
 
-// --- Delete an order by ID ---
+// --- Delete an order by ID
 app.delete("/orders/:id", (req, res) => {
   const { id } = req.params;
   const index = orders.findIndex(o => o.id === id);
 
-  if (index === -1) return res.status(404).json({ error: "Замовлення не знайдено" });
+  if (index === -1) {
+    return res.status(404).json({ error: "Замовлення не знайдено" });
+  }
 
   orders.splice(index, 1);
   res.json({ message: `Замовлення ${id} видалено` });
@@ -93,12 +105,6 @@ app.use((req, res) => {
     method: req.method,
     path: req.originalUrl,
   });
-});
-
-// ===== ERROR HANDLER =====
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Internal Server Error" });
 });
 
 // ===== START SERVER =====
