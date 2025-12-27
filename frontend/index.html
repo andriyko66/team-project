@@ -237,30 +237,43 @@
     }
   }
 
-  // ----- Завантаження замовлень
-  async function loadOrders() {
-    const container = document.getElementById("ordersList");
-    container.innerHTML = "Завантаження...";
+ // ----- Завантаження замовлень
+async function loadOrders() {
+  const container = document.getElementById("ordersList");
+  container.innerHTML = "Завантаження...";
 
-    const response = await fetch(API_URL + "/orders");
-    const orders = await response.json();
+  const response = await fetch(API_URL + "/orders");
+  const orders = await response.json();
 
-    container.innerHTML = "";
+  container.innerHTML = "";
 
-    orders.forEach(order => {
-      const div = document.createElement("div");
-      div.className = "card";
+  orders.forEach(order => {
+    const div = document.createElement("div");
+    div.className = "card";
 
-      div.innerHTML = `
-        <p><b>ID:</b> ${order.id}</p>
-        <p><b>Товар:</b> ${order.item.name}</p>
-        <p><b>Кількість:</b> ${order.quantity}</p>
-        <p><b>Сума:</b> ${order.total} грн</p>
-      `;
+    div.innerHTML = `
+      <p><b>ID:</b> ${order.id}</p>
+      <p><b>Товар:</b> ${order.item.name}</p>
+      <p><b>Кількість:</b> ${order.quantity}</p>
+      <p><b>Сума:</b> ${order.total} грн</p>
+    `;
 
-      container.appendChild(div);
+    // --- Додаємо кнопку видалити ---
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Видалити";
+    delBtn.addEventListener("click", async () => {
+      const res = await fetch(`${API_URL}/orders/${order.id}`, { method: "DELETE" });
+      const result = await res.json();
+      alert(result.message);
+      loadOrders(); // обновлюємо список після видалення
     });
-  }
+
+    div.appendChild(delBtn);
+
+    container.appendChild(div);
+  });
+}
+
 
   // ----- Health check
   async function checkHealth() {
