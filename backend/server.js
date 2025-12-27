@@ -10,34 +10,113 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-// ===== MIDDLEWARE =====
+/* =========================
+   MIDDLEWARE
+========================= */
 app.use(cors());
 app.use(express.json());
 
-// ===== Підключення фронтенду =====
-app.use(express.static(path.join(__dirname, "../frontend"))); // <-- вказуємо правильний шлях
+/* =========================
+   REQUEST ID (ОБОВʼЯЗКОВО ПЕРЕД ROUTES)
+========================= */
+app.use((req, res, next) => {
+  const requestId = randomUUID();
+  req.requestId = requestId;
+  res.setHeader("X-Request-Id", requestId);
+  next();
+});
 
-// ===== IN-MEMORY DATA =====
+/* =========================
+   FRONTEND
+========================= */
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+/* =========================
+   DATA
+========================= */
 const items = [
   { id: "1", name: "Хліб", description: "Свіжий пшеничний хліб", price: 25 },
   { id: "2", name: "Молоко", description: "Молоко 2.5%", price: 38 },
-  { id: "3", name: "Сир", description: "Твердий сир", price: 120 },
+  { id: "3", name: "Сир", description: "Твердий сир", price: 120 }
 ];
 
 const orders = [];
 
+/* =========================
+   IDEMPOTENCY
+========================= */
+const idempotencyStore = new Map();
 
-  // якщо вже був такий ключ — повертаємо той самий результат
+/* =========================
+   RATE LIMIT (429)
+========================= */
+let requestCount = 0;
+
+setInterval(() => {
+  requestCount = 0;
+}, 10000);
+
+/* =========================
+   ROUTES
+========================= */
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+});
+
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    requestId: req.requestId
+  });
+});
+
+app.get("/items", (req, res) => {
+  res.json(items);
+});
+
+app.get("/orders", (req, res) => {
+  res.json(orders);
+});
+
+/* =========================
+   POST /orders (IDEMPOTENT)
+========================= */
+app.post("/orders", (req, res) => {
+  requestCount++;
+
+  if (requestCount > 10) {
+    res.setHeader("Retry-After", "5");
+    return res.status(429).json({
+      error: "Too many requests",
+      requestId: req.requestId
+    });
+  }
+
+  const idemKey = req.headers["idempotency-key"];
+  if (!idemKey) {
+    return res.status(400).json({
+      error: "Missing Idempotency-Key",
+      requestId: req.requestId
+    });
+  }
+
   if (idempotencyStore.has(idemKey)) {
-    const savedResponse = idempotencyStore.get(idemKey);
-    return res.status(201).json({
-      ...savedResponse,
+    return res.status(200).json({
+      ...idempotencyStore.get(idemKey),
       requestId: req.requestId,
       idempotent: true
     });
   }
 
   const { itemId, quantity } = req.body;
+
+  if (!itemId || !quantity) {
+    return res.status(400).json({
+      error: "itemId and quantity required",
+      requestId: req.requestId
+    });
+  }
 
   const item = items.find(i => i.id === itemId);
   if (!item) {
@@ -56,8 +135,6 @@ const orders = [];
   };
 
   orders.push(order);
-
-  // ЗБЕРІГАЄМО результат
   idempotencyStore.set(idemKey, order);
 
   res.status(201).json({
@@ -67,47 +144,39 @@ const orders = [];
   });
 });
 
-// ===== REQUEST ID =====
-app.use((req, res, next) => {
-  const id = randomUUID();
-  req.requestId = id;
-  res.setHeader("X-Request-Id", id);
-  next();
-});
-
-// ===== ROUTES =====
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/index.html")); // <-- тут теж вказуємо правильний шлях
-});
-
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString(), requestId: req.requestId });
-});
-
-app.get("/items", (req, res) => res.json(items));
-app.get("/orders", (req, res) => res.json(orders));
-
-app.post("/orders", (req, res) => {
-  const { itemId, quantity } = req.body;
-  if (!itemId || !quantity) return res.status(400).json({ error: "Вкажіть itemId та quantity" });
-
-  const item = items.find(i => i.id === itemId);
-  if (!item) return res.status(400).json({ error: "Товар не знайдено" });
-
-  const newOrder = { id: randomUUID(), item, quantity, total: item.price * quantity, createdAt: new Date().toISOString() };
-  orders.push(newOrder);
-  res.status(201).json(newOrder);
-});
-
+/* =========================
+   DELETE /orders/:id
+========================= */
 app.delete("/orders/:id", (req, res) => {
-  const { id } = req.params;
-  const index = orders.findIndex(o => o.id === id);
-  if (index === -1) return res.status(404).json({ error: "Замовлення не знайдено" });
+  const index = orders.findIndex(o => o.id === req.params.id);
+
+  if (index === -1) {
+    return res.status(404).json({
+      error: "Order not found",
+      requestId: req.requestId
+    });
+  }
 
   orders.splice(index, 1);
-  res.json({ message: `Замовлення ${id} видалено` });
+  res.json({
+    message: "Order deleted",
+    requestId: req.requestId
+  });
 });
 
-app.use((req, res) => res.status(404).json({ error: "Route not found", method: req.method, path: req.originalUrl }));
+/* =========================
+   404
+========================= */
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    requestId: req.requestId
+  });
+});
 
-app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
+/* =========================
+   START
+========================= */
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
+});
